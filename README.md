@@ -3,7 +3,7 @@ Simple django project with some test api apps
 
 ## Clone
 ```
-git clone path
+git clone git@github.com:Kriz1618/django-tutorial.git
 ```
 
 ## Create and activate a virtual environment
