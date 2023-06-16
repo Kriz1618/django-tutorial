@@ -30,8 +30,6 @@ router.register(r'articles', ArticleViewSet)
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('articles/<int:pk>/',
-         ArticleViewSet.as_view({'put': 'update', 'delete': 'destroy'})),
     path('', include(router.urls)),
     path('api/', include(users))
 ]

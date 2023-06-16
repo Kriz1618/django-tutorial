@@ -21,6 +21,8 @@ class ArticleModelTestCase(TestCase):
         self.assertEqual(str(self.article), self.article.title)
 
 
+
+
 class ArticleViewSetTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
