@@ -19,6 +19,7 @@ from django.urls import include, path
 from rest_framework import routers
 from tutorial.quickstart import views
 from articles.views import ArticleViewSet
+from users.urls import urlpatterns as users
 
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
@@ -29,7 +30,8 @@ router.register(r'articles', ArticleViewSet)
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('articles/<int:pk>/', ArticleViewSet.as_view({'put': 'update', 'delete': 'destroy'})),
+    path('articles/<int:pk>/',
+         ArticleViewSet.as_view({'put': 'update', 'delete': 'destroy'})),
     path('', include(router.urls)),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+    path('api/', include(users))
 ]
