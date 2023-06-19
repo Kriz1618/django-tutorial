@@ -1,6 +1,4 @@
 from rest_framework import viewsets
-from rest_framework import status
-from rest_framework.response import Response
 from rest_framework import permissions
 
 from .models import Article
@@ -15,14 +13,14 @@ class ArticleViewSet(viewsets.ModelViewSet):
     serializer_class = ArticleSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        sort = self.request.query_params.get('sort', None)
+        page_size = self.request.query_params.get('page_size', None)
+        if sort == 'asc':
+            queryset = queryset.order_by('created_at')
+        elif sort == 'desc':
+            queryset = queryset.order_by('-created_at')
+        if page_size is not None:
+            self.pagination_class.page_size = int(page_size)
+        return queryset
