@@ -1,16 +1,15 @@
 from django.contrib.auth import authenticate
 from rest_framework import status
 from rest_framework.generics import CreateAPIView, GenericAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.token_blacklist.models import (
-    OutstandingToken)
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from .serializers import CustomTokenObtainPairSerializer, User, UserSerializer
+from .serializers import (CustomTokenObtainPairSerializer,
+                          RefreshTokenSerializer, User, UserSerializer)
 
 
 class RegisterView(CreateAPIView):
@@ -39,39 +38,19 @@ class LoginView(APIView):
 
 class RefreshTokenView(TokenRefreshView):
     authentication_classes = [JWTAuthentication]
-
-    def post(self, request, *args, **kwargs):
-        refresh_token = request.data.get('refresh')
-        if refresh_token:
-            try:
-                token = RefreshToken(refresh_token)
-                jti = token["jti"]
-                outstanding_token = OutstandingToken.objects.get(token=jti)
-                outstanding_token.blacklist()
-            except OutstandingToken.DoesNotExist:
-                pass
-            except Exception as e:
-                return Response({'error': 'Invalid refresh token'}, status=status.HTTP_400_BAD_REQUEST)
-
-        return super().post(request, *args, **kwargs)
+    serializer_class = RefreshTokenSerializer
 
     def get_serializer(self, *args, **kwargs):
-        """
-        Override this method to use a custom serializer class.
-        """
-        if getattr(self, 'swagger_fake_view', False):
-            # Ignore swagger requests
-            return None
-
-        serializer_class = self.get_serializer_class()
         kwargs['context'] = self.get_serializer_context()
-
-        return serializer_class(*args, **kwargs)
+        return self.serializer_class(*args, **kwargs)
 
 
 class Logout(GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, *args, **kwargs):
-        user = User.objects.filter(id=request.data.get('user', ''))
+        user = User.objects.filter(username=request.data.get('username', ''))
+
         if user.exists():
             RefreshToken.for_user(user.first())
             return Response({'message': 'Session closed successfully'}, status=status.HTTP_200_OK)

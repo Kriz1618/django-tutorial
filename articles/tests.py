@@ -64,7 +64,7 @@ class ArticleViewSetTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_sorting_by_created_at_desc(self):
-        response = self.client.get('/articles/?sort=desc')
+        response = self.client.get('/articles/?ordering=-created_at')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 4)
         self.assertEqual(response.data['results'][0]['id'], self.article3.id)
@@ -73,7 +73,7 @@ class ArticleViewSetTestCase(TestCase):
         self.assertEqual(response.data['results'][3]['id'], self.article.id)
 
     def test_sorting_by_created_at_asc(self):
-        response = self.client.get('/articles/?sort=asc')
+        response = self.client.get('/articles/?ordering=created_at')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 4)
         self.assertEqual(response.data['results'][0]['id'], self.article.id)

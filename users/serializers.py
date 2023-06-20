@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
@@ -42,21 +43,22 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return data
 
 
-class TokenPairSerializer(serializers.Serializer):
-    refresh = serializers.SerializerMethodField()
-    access = serializers.SerializerMethodField()
+class RefreshTokenSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
 
-    def get_refresh(self, obj):
-        return str(obj['refresh'])
+    def validate(self, data):
+        refresh_token = data['refresh']
+        if not refresh_token:
+            raise serializers.ValidationError('No refresh token was sent')
 
-    def get_access(self, obj):
-        return str(obj['access'])
-
-    def validate(self, attrs):
         try:
-            refresh_token = RefreshToken(attrs['refresh'])
-            data = {'access': str(refresh_token.access_token),
-                    'refresh': str(refresh_token)}
+            token = RefreshToken(refresh_token)
+            jti = token["jti"]
+            outstanding_token = OutstandingToken.objects.get(token=jti)
+            outstanding_token.blacklist()
+        except OutstandingToken.DoesNotExist:
+            pass
         except Exception as e:
-            raise serializers.ValidationError(str(e))
-        return data
+            raise serializers.ValidationError('Invalid refresh token')
+
+        return {'access': str(token.access_token), 'refresh': str(token)}
