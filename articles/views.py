@@ -1,5 +1,5 @@
-from rest_framework import viewsets, pagination
-from rest_framework import permissions
+from rest_framework import pagination, permissions, viewsets
+from rest_framework.filters import OrderingFilter
 
 from .models import Article
 from .serializers import ArticleSerializer
@@ -18,11 +18,5 @@ class ArticleViewSet(viewsets.ModelViewSet):
     serializer_class = ArticleSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = CustomPagination
-    ordering_fields = ('created_at', '-created_at')
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        ordering = self.request.query_params.get('ordering', None)
-        if ordering and ordering in self.ordering_fields:
-            queryset = queryset.order_by(ordering)
-        return queryset
+    filter_backends = [OrderingFilter]
+    ordering_fields = ['title','created_at']
