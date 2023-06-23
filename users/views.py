@@ -56,7 +56,6 @@ class RefreshTokenView(TokenRefreshView):
 
 class LogoutView(GenericAPIView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
 
     def post(self, request, *args, **kwargs):
         user = User.objects.filter(username=request.data.get('username', ''))

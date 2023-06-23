@@ -1,8 +1,7 @@
 from rest_framework import pagination, permissions, viewsets
+from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
-from rest_framework import viewsets
-from rest_framework import permissions
-from django.core.exceptions import PermissionDenied
+from rest_framework.response import Response
 
 from .models import Article
 from .serializers import ArticleSerializer
@@ -25,21 +24,16 @@ class ArticleViewSet(viewsets.ModelViewSet):
     ordering_fields = ['title', 'created_at']
 
     def get_queryset(self):
-        if self.action == 'list':
-            return self.queryset.filter(author=self.request.user)
-        return self.queryset
+        return self.queryset.filter(author=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    def perform_update(self, serializer):
-        instance = serializer.save()
-        if instance.author != self.request.user:
-            raise PermissionDenied(
-                'You don\'t have permission to modify this article.')
-
-    def perform_destroy(self, instance):
-        if instance.author != self.request.user:
-            raise PermissionDenied(
-                'You don\'t have permission to delete this article.')
-        instance.delete()
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def all_articles(self, request):
+        """
+        Returns a list of all articles
+        """
+        articles = Article.objects.all()
+        serializer = self.get_serializer(articles, many=True)
+        return Response(serializer.data)

@@ -117,3 +117,10 @@ class ArticleViewSetTestCase(TestCase):
     def test_delete_article(self):
         response = self.client.delete('/articles/{}/'.format(self.article.id))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_all_articles(self):
+        url = '/articles/all_articles/'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 4)
