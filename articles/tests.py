@@ -10,10 +10,13 @@ from .serializers import ArticleSerializer
 
 class ArticleModelTestCase(TestCase):
     def setUp(self):
+        self.user = User.objects.create_user(
+            username='testuser', password='tests')
         self.article = Article.objects.create(
             title='Test Article',
             body='This is a test article.',
-            image='https://test-image.png'
+            image='https://test-image.png',
+            author=self.user
 
         )
 
@@ -28,17 +31,18 @@ class ArticleViewSetTestCase(TestCase):
             username='testuser', password='tests')
         self.client.force_authenticate(user=self.user)
         self.article = Article.objects.create(
-            title='Test Article', body='This is a test article.', image='https://test-image.png')
+            title='Test Article', body='This is a test article.', image='https://test-image.png', author=self.user)
         self.article1 = Article.objects.create(
-            title='Test Article 1', body='This is a test article 1.', image='https://test-image.png')
+            title='Test Article 1', body='This is a test article 1.', image='https://test-image.png', author=self.user)
         self.article2 = Article.objects.create(
-            title='Test Article 2', body='This is a test article 2', image='https://test-image.png')
+            title='Test Article 2', body='This is a test article 2', image='https://test-image.png', author=self.user)
         self.article3 = Article.objects.create(
-            title='Test Article 3', body='This is a test article 3', image='https://test-image.png')
+            title='Test Article 3', body='This is a test article 3', image='https://test-image.png', author=self.user)
         self.valid_payload = {
             "title": "Updated Test Article",
             "body": "This is an updated test article.",
-            "image": "https://test-image.png"
+            "image": "https://test-image.png",
+            "author": self.user
         }
         self.invalid_payload = {
             'title': '',
@@ -52,6 +56,15 @@ class ArticleViewSetTestCase(TestCase):
         serializer = ArticleSerializer(articles, many=True)
         self.assertEqual(json.dumps(
             response.data['results']), json.dumps(serializer.data))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_all_articles_with_different_user(self):
+        self.user = User.objects.create_user(
+            username='user1', password='test')
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/articles/')
+        self.assertEqual(json.dumps(
+            response.data['results']), '[]')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_create_valid_article(self):
@@ -96,13 +109,18 @@ class ArticleViewSetTestCase(TestCase):
         self.assertEqual(response.data['body'], self.article2.body)
         self.assertEqual(response.data['image'], self.article2.image)
 
-    @skip("No implemented")
     def test_update_article(self):
         response = self.client.put(
             '/articles/{}/'.format(self.article.id), data=self.valid_payload)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    @skip("No implemented")
     def test_delete_article(self):
         response = self.client.delete('/articles/{}/'.format(self.article.id))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_all_articles(self):
+        url = '/articles/all_articles/'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 4)

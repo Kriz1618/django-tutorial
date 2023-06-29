@@ -36,6 +36,15 @@ class LoginView(APIView):
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ProtectedView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        content = {'message': 'This is a protected endpoint!'}
+        return Response(content)
+
+
 class RefreshTokenView(TokenRefreshView):
     authentication_classes = [JWTAuthentication]
     serializer_class = RefreshTokenSerializer
@@ -45,7 +54,7 @@ class RefreshTokenView(TokenRefreshView):
         return self.serializer_class(*args, **kwargs)
 
 
-class Logout(GenericAPIView):
+class LogoutView(GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
@@ -53,5 +62,5 @@ class Logout(GenericAPIView):
 
         if user.exists():
             RefreshToken.for_user(user.first())
-            return Response({'message': 'Session closed successfully'}, status=status.HTTP_200_OK)
+            return Response({'message': 'Session closed successfully'}, status=status.HTTP_204_NO_CONTENT)
         return Response({'error': 'User not found'}, status=status.HTTP_400_BAD_REQUEST)
