@@ -42,5 +42,6 @@ autopep8 -i */*.py
 * Excecute migration `python manage.py migrate articles`
 * Define viewSets in the file `articles/views.py`
 * Freeze modules in the requirements file `pip freeze >> requirements.txt`
+* List endpoints `python manage.py show_urls`
 
 

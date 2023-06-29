@@ -3,8 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 
-from .models import Article
-from .serializers import ArticleSerializer
+from .models import Article, Comment
+from .serializers import ArticleSerializer, CommentSerializer
 
 
 class CustomPagination(pagination.PageNumberPagination):
@@ -34,6 +34,44 @@ class ArticleViewSet(viewsets.ModelViewSet):
         """
         Returns a list of all articles
         """
+       
         articles = Article.objects.all()
+        page = self.paginate_queryset(articles)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(articles, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get', 'post', 'put'])
+    def comments(self, request, pk=None):
+        article = self.get_object()
+        if request.method == 'GET':
+            comments = article.comments.all()
+            page = self.paginate_queryset(comments)
+            if page is not None:
+                serializer = CommentSerializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+            serializer = CommentSerializer(comments, many=True)
+            return Response(serializer.data)
+        elif request.method == 'POST':
+            serializer = CommentSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(article=article, author=request.user)
+                return Response(serializer.data, status=201)
+            else:
+                return Response(serializer.errors, status=400)
+        else:
+            comment = article.comments.get(pk=request.data.get('id'))
+            if request.method == 'PUT':
+                serializer = CommentSerializer(comment, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            else:
+                return Response(serializer.errors, status=400)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
