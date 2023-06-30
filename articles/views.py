@@ -35,7 +35,13 @@ class ArticleViewSet(viewsets.ModelViewSet):
         Returns a list of all articles
         """
        
-        articles = Article.objects.all()
+        user = self.request.user
+        articles = None
+        if not user.is_authenticated:
+            articles =  Article.objects.filter(is_public=True)
+        else:
+            articles = Article.objects.filter(is_public=False)
+
         page = self.paginate_queryset(articles)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
