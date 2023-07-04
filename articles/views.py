@@ -1,4 +1,4 @@
-from rest_framework import pagination, permissions, viewsets
+from rest_framework import pagination, permissions, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
@@ -34,11 +34,11 @@ class ArticleViewSet(viewsets.ModelViewSet):
         """
         Returns a list of all articles
         """
-       
+
         user = self.request.user
         articles = None
         if not user.is_authenticated:
-            articles =  Article.objects.filter(is_public=True)
+            articles = Article.objects.filter(is_public=True)
         else:
             articles = Article.objects.filter(is_public=False)
 
@@ -69,16 +69,25 @@ class ArticleViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=201)
         else:
             return Response(serializer.errors, status=400)
-    
-    @action(detail=True, methods=['put'])
-    def update_comment(self, request, pk=None):
-        article = self.get_object()
-        comment = article.comments.get(pk=request.data.get('id'))
-        serializer = CommentSerializer(comment, data=request.data, partial=True)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=400)
-        return Response(serializer.data)
 
-class CommentViewSet(viewsets.ModelViewSet):
+
+class CommentViewSet(
+    viewsets.GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.UpdateModelMixin, mixins.DestroyModelMixin):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(author=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(status=204)

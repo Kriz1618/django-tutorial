@@ -20,11 +20,14 @@ from rest_framework import routers
 from tutorial.quickstart import views
 from articles.views import ArticleViewSet
 from users.urls import urlpatterns as users
+from articles.views import CommentViewSet
 
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
 router.register(r'groups', views.GroupViewSet)
 router.register(r'articles', ArticleViewSet)
+router.register(r'comments', CommentViewSet)
+
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
