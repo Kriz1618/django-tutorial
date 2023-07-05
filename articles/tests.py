@@ -29,6 +29,8 @@ class ArticleViewSetTestCase(TestCase):
         self.client = APIClient()
         self.user = User.objects.create_user(
             username='testuser', password='tests')
+        self.second_user = User.objects.create_user(
+            username='second_user', password='tests')
         self.client.force_authenticate(user=self.user)
         self.article = Article.objects.create(
             title='Test Article', body='This is a test article.', image='https://test-image.png', author=self.user)
@@ -51,6 +53,8 @@ class ArticleViewSetTestCase(TestCase):
         }
         self.article1_comment = Comment.objects.create(
             article=self.article, title='Test comment', comment='Article', author=self.user)
+        self.article1_comment1 = Comment.objects.create(
+            article=self.article, title='Second comment', comment='Article 2', author=self.second_user)
         self.valid_comment_payload = {
             "title": "Article 1's comment",
             "comment": "Test comment"
@@ -138,15 +142,72 @@ class ArticleViewSetTestCase(TestCase):
 
     def test_create_valid_article_comment(self):
         response = self.client.post(
-            f'/articles/{self.article.id}/comments/', data=self.valid_comment_payload)
+            f'/articles/{self.article.id}/comment/', data=self.valid_comment_payload)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_create_invalid_article(self):
+    def test_create_invalid_article_comment(self):
         response = self.client.post(
-            f'/articles/{self.article.id}/comments/', data=self.invalid_comment_payload)
+            f'/articles/{self.article.id}/comment/', data=self.invalid_comment_payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_article_comment(self):
+        response = self.client.put(
+            f'/comments/{self.article1_comment.id}/',
+            data={ "title":"Updated comment", "comment": "new comment"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['title'], 'Updated comment')
+        self.assertEqual(response.data['comment'], 'new comment')
 
     def test_get_articles_comments(self):
         response = self.client.get(f'/articles/{self.article.id}/comments/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2)
+
+    def test_get_articles_comments_by_user(self):
+        self.client.force_authenticate(user=self.second_user)
+        response = self.client.get(f'/comments/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['title'], self.article1_comment1.title)
+
+    def test_report_comment(self):
+        response = self.client.post(f'/comments/{self.article1_comment1.id}/report/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['report_count'], 1)
+
+    def test_remove_comment_report(self):
+        response = self.client.post(f'/comments/{self.article1_comment1.id}/report/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['report_count'], 1)
+        response = self.client.post(f'/comments/{self.article1_comment1.id}/report/', {"remove": True})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['report_count'], 0)
+
+    def test_report_comment_allowed_times(self):
+        self.usr1 = User.objects.create_user(username='usr1', password='tests')
+        self.usr2 = User.objects.create_user(username='usr2', password='tests')
+        self.usr3 = User.objects.create_user(username='usr3', password='tests')
+        self.usr4 = User.objects.create_user(username='usr4', password='tests')
+        self.usr5 = User.objects.create_user(username='usr5', password='tests')
+
+        response = self.client.post(f'/comments/{self.article1_comment1.id}/report/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['report_count'], 1)
+        self.client.force_authenticate(user=self.usr1)
+        response = self.client.post(f'/comments/{self.article1_comment1.id}/report/')
+        self.assertEqual(response.data['report_count'], 2)
+        self.client.force_authenticate(user=self.usr2)
+        response = self.client.post(f'/comments/{self.article1_comment1.id}/report/')
+        self.assertEqual(response.data['report_count'], 3)
+        self.client.force_authenticate(user=self.usr3)
+        response = self.client.post(f'/comments/{self.article1_comment1.id}/report/')
+        self.assertEqual(response.data['report_count'], 4)
+        self.client.force_authenticate(user=self.usr4)
+        response = self.client.post(f'/comments/{self.article1_comment1.id}/report/')
+        self.assertEqual(response.data['report_count'], 5)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.client.force_authenticate(user=self.usr5)
+        response = self.client.post(f'/comments/{self.article1_comment1.id}/report/')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        
+        

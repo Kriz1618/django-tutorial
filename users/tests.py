@@ -63,10 +63,14 @@ class LogoutViewTestCase(TestCase):
             email='testuser@test.com',
             password='testpass'
         )
-        self.serializer_url = reverse('logout')
-        self.token = self.get_access_token()
+        self.client.login(username='testuser', password='testpass')
+        self.client.force_authenticate(user=self.user)
+        # self.serializer_url = reverse('logout')
+        # self.token = self.get_access_token()
 
-    def get_access_token(self):
-        response = self.client.post(reverse(
-            'login'), {'username': 'testuser', 'password': 'testpass'}, format='json')
-        return response.data['access']
+    def test_get_access_token(self):
+        response = self.client.get('/api/protected/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)        
+        response = self.client.post('/api/logout/',{'username': 'testuser'})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+

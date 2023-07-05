@@ -21,5 +21,16 @@ class Comment(models.Model):
     title = models.CharField(max_length=255)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.TextField()
+    reports = models.IntegerField(default=0)
+    reporters = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def update_reports(self, user_id, increment=1):
+        if str(user_id) in self.reporters.split(',') and increment == 1:
+            return { "result": "Comment already reported." }
+        self.reports += increment
+        self.reporters += str(user_id)
+        if self.reports >= 0:
+            self.save()
+            return self.reports
