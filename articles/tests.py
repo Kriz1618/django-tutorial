@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from unittest import skip
 from rest_framework.test import APIClient
 from rest_framework import status
-from .models import Article
+from .models import Article, Comment
 from .serializers import ArticleSerializer
 
 
@@ -38,16 +38,26 @@ class ArticleViewSetTestCase(TestCase):
             title='Test Article 2', body='This is a test article 2', image='https://test-image.png', author=self.user)
         self.article3 = Article.objects.create(
             title='Test Article 3', body='This is a test article 3', image='https://test-image.png', author=self.user)
-        self.valid_payload = {
+        self.valid_article_payload = {
             "title": "Updated Test Article",
             "body": "This is an updated test article.",
             "image": "https://test-image.png",
             "author": self.user
         }
-        self.invalid_payload = {
+        self.invalid_article_payload = {
             'title': '',
             'body': 'This is an invalid test article.',
             'image': 45
+        }
+        self.article1_comment = Comment.objects.create(
+            article=self.article, title='Test comment', comment='Article', author=self.user)
+        self.valid_comment_payload = {
+            "title": "Article 1's comment",
+            "comment": "Test comment"
+        }
+        self.invalid_comment_payload = {
+            "title": "Article 1's comment",
+            "comments": "Test comment"
         }
 
     def test_get_all_articles(self):
@@ -69,11 +79,12 @@ class ArticleViewSetTestCase(TestCase):
 
     def test_create_valid_article(self):
         response = self.client.post(
-            '/articles/?format=api', data=self.valid_payload)
+            '/articles/?format=api', data=self.valid_article_payload)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_create_invalid_article(self):
-        response = self.client.post('/articles/', data=self.invalid_payload)
+        response = self.client.post(
+            '/articles/', data=self.invalid_article_payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_sorting_by_created_at_desc(self):
@@ -111,7 +122,7 @@ class ArticleViewSetTestCase(TestCase):
 
     def test_update_article(self):
         response = self.client.put(
-            '/articles/{}/'.format(self.article.id), data=self.valid_payload)
+            '/articles/{}/'.format(self.article.id), data=self.valid_article_payload)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete_article(self):
@@ -124,3 +135,18 @@ class ArticleViewSetTestCase(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
+
+    def test_create_valid_article_comment(self):
+        response = self.client.post(
+            f'/articles/{self.article.id}/comments/', data=self.valid_comment_payload)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_invalid_article(self):
+        response = self.client.post(
+            f'/articles/{self.article.id}/comments/', data=self.invalid_comment_payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_get_articles_comments(self):
+        response = self.client.get(f'/articles/{self.article.id}/comments/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
