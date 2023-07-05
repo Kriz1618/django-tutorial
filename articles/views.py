@@ -72,9 +72,10 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(
-    viewsets.GenericViewSet,
-    mixins.ListModelMixin,
-    mixins.UpdateModelMixin, mixins.DestroyModelMixin):
+        viewsets.GenericViewSet,
+        mixins.ListModelMixin,
+        mixins.UpdateModelMixin,
+        mixins.DestroyModelMixin):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
