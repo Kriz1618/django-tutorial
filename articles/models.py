@@ -22,15 +22,20 @@ class Comment(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.TextField()
     reports = models.IntegerField(default=0)
-    reporters = models.TextField(blank=True)
+    reported_by = models.ManyToManyField(User, related_name='reported_comments')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def update_reports(self, user_id, increment=1):
-        if str(user_id) in self.reporters.split(',') and increment == 1:
-            return { "result": "Comment already reported." }
-        self.reports += increment
-        self.reporters += str(user_id)
-        if self.reports >= 0:
+    def report(self, user):
+        if user not in self.reported_by.all():
+            self.reported_by.add(user)
+            self.reports += 1
             self.save()
-            return self.reports
+        return self.reported_by.count()
+
+    def remove_report(self, user):
+        if user in self.reported_by.all():
+            self.reported_by.remove(user)
+            self.reports -= 1
+            self.save()            
+        return self.reported_by.count()

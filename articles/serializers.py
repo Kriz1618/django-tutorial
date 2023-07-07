@@ -1,7 +1,7 @@
-from .models import Article, Comment
 from rest_framework import serializers
 
-from .models import Article
+from users.serializers import UserSerializer
+from .models import Article, Comment
 
 
 class ArticleSerializer(serializers.ModelSerializer):
@@ -19,5 +19,13 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ('id', 'article', 'title',
-                  'user', 'comment', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at')
+                  'user', 'comment', 'created_at', 'updated_at', 'reports')
+        read_only_fields = ('id', 'reports')
+
+
+class CommentReportSerializer(CommentSerializer):
+    reported_by = UserSerializer(many=True)
+
+    class Meta:
+        model = Comment
+        fields = ('id', 'reported_by', 'reports')

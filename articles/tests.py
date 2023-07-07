@@ -179,7 +179,7 @@ class ArticleViewSetTestCase(TestCase):
         response = self.client.post(f'/comments/{self.article1_comment1.id}/report/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['report_count'], 1)
-        response = self.client.post(f'/comments/{self.article1_comment1.id}/report/', {"remove": True})
+        response = self.client.post(f'/comments/{self.article1_comment1.id}/remove_report/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['report_count'], 0)
 

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from .models import Article, Comment
-from .serializers import ArticleSerializer, CommentSerializer
+from .serializers import ArticleSerializer, CommentSerializer, CommentReportSerializer
 
 
 class CustomPagination(pagination.PageNumberPagination):
@@ -80,11 +80,11 @@ class CommentViewSet(
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
-    public_actions = ['report']
+    public_actions = ['report', 'remove_report']
 
     def get_queryset(self):
         if self.action not in self.public_actions:
-            return self.queryset.filter(reports__lt=5, author=self.request.user)
+            return self.queryset.filter(author=self.request.user)
         return self.queryset.filter(reports__lt=5)
 
     def retrieve(self, request, *args, **kwargs):
@@ -100,8 +100,13 @@ class CommentViewSet(
     @action(detail=True, methods=['post'])
     def report(self, request, pk=None):
         comment = self.get_object()
-        increment = 1
-        if 'remove' in request.data and bool(request.data['remove']):
-            increment = -1
-        result = comment.update_reports(request.user.id, increment=increment)
+        self.serializer_class = CommentReportSerializer
+        result = comment.report(request.user)
+        return Response({"report_count": result}, status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def remove_report(self, request, pk=None):
+        self.serializer_class = CommentReportSerializer        
+        comment = self.get_object()
+        result = comment.remove_report(request.user)
         return Response({"report_count": result}, status.HTTP_200_OK)
