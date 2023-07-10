@@ -2,9 +2,10 @@ from rest_framework import pagination, permissions, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
+from rest_framework import status
 
 from .models import Article, Comment
-from .serializers import ArticleSerializer, CommentSerializer
+from .serializers import ArticleSerializer, CommentSerializer, CommentReportSerializer
 
 
 class CustomPagination(pagination.PageNumberPagination):
@@ -66,9 +67,9 @@ class ArticleViewSet(viewsets.ModelViewSet):
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(article=article, author=request.user)
-            return Response(serializer.data, status=201)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return Response(serializer.errors, status=400)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CommentViewSet(
@@ -79,9 +80,12 @@ class CommentViewSet(
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
+    public_actions = ['report', 'remove_report']
 
     def get_queryset(self):
-        return self.queryset.filter(author=self.request.user)
+        if self.action not in self.public_actions:
+            return self.queryset.filter(author=self.request.user)
+        return self.queryset.filter(reports__lt=5)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -91,4 +95,18 @@ class CommentViewSet(
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
-        return Response(status=204)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'])
+    def report(self, request, pk=None):
+        comment = self.get_object()
+        self.serializer_class = CommentReportSerializer
+        result = comment.report(request.user)
+        return Response({"report_count": result}, status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def remove_report(self, request, pk=None):
+        self.serializer_class = CommentReportSerializer        
+        comment = self.get_object()
+        result = comment.remove_report(request.user)
+        return Response({"report_count": result}, status.HTTP_200_OK)
