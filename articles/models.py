@@ -17,12 +17,13 @@ class Article(models.Model):
 
 class Comment(models.Model):
     article = models.ForeignKey(
-        Article, on_delete=models.CASCADE, related_name='comments')
+        Article, on_delete=models.CASCADE, related_name="comments"
+    )
     title = models.CharField(max_length=255)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.TextField()
     reports = models.IntegerField(default=0)
-    reported_by = models.ManyToManyField(User, related_name='reported_comments')
+    reported_by = models.ManyToManyField(User, related_name="reported_comments")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -37,5 +38,5 @@ class Comment(models.Model):
         if user in self.reported_by.all():
             self.reported_by.remove(user)
             self.reports -= 1
-            self.save()            
+            self.save()
         return self.reported_by.count()

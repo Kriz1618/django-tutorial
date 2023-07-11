@@ -9,7 +9,7 @@ from .serializers import ArticleSerializer, CommentSerializer, CommentReportSeri
 
 
 class CustomPagination(pagination.PageNumberPagination):
-    page_size_query_param = 'page_size'
+    page_size_query_param = "page_size"
     max_page_size = 100
 
 
@@ -17,12 +17,13 @@ class ArticleViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
     """
-    queryset = Article.objects.all().order_by('created_at')
+
+    queryset = Article.objects.all().order_by("created_at")
     serializer_class = ArticleSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = CustomPagination
     filter_backends = [OrderingFilter]
-    ordering_fields = ['title', 'created_at']
+    ordering_fields = ["title", "created_at"]
 
     def get_queryset(self):
         return self.queryset.filter(author=self.request.user)
@@ -30,7 +31,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=["get"], permission_classes=[permissions.AllowAny])
     def all_articles(self, request):
         """
         Returns a list of all articles
@@ -50,7 +51,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(articles, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=["get"])
     def comments(self, request, pk=None):
         article = self.get_object()
         comments = article.comments.all()
@@ -61,7 +62,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def comment(self, request, pk=None):
         article = self.get_object()
         serializer = CommentSerializer(data=request.data)
@@ -73,14 +74,15 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(
-        viewsets.GenericViewSet,
-        mixins.ListModelMixin,
-        mixins.UpdateModelMixin,
-        mixins.DestroyModelMixin):
+    viewsets.GenericViewSet,
+    mixins.ListModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
-    public_actions = ['report', 'remove_report']
+    public_actions = ["report", "remove_report"]
 
     def get_queryset(self):
         if self.action not in self.public_actions:
@@ -97,16 +99,16 @@ class CommentViewSet(
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def report(self, request, pk=None):
         comment = self.get_object()
         self.serializer_class = CommentReportSerializer
         result = comment.report(request.user)
         return Response({"report_count": result}, status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def remove_report(self, request, pk=None):
-        self.serializer_class = CommentReportSerializer        
+        self.serializer_class = CommentReportSerializer
         comment = self.get_object()
         result = comment.remove_report(request.user)
         return Response({"report_count": result}, status.HTTP_200_OK)
