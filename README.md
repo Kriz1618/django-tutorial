@@ -29,6 +29,7 @@ python manage.py test
 ## Format Code
 ```
 autopep8 -i */*.py
+black .
 ```
 
 ## Steps

@@ -10,7 +10,7 @@ class RegisterViewTestCase(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.register_url = reverse('register')
+        self.register_url = reverse("register")
 
     def test_register_user(self):
         """Test API can create a user"""
@@ -18,13 +18,13 @@ class RegisterViewTestCase(TestCase):
         data = {
             "username": "testuser",
             "email": "testuser@test.com",
-            "password": "test_pass"
+            "password": "test_pass",
         }
-        response = self.client.post(self.register_url, data, format='json')
+        response = self.client.post(self.register_url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['id'], 1)
-        self.assertEqual(response.data['username'], 'testuser')
-        self.assertEqual(response.data['email'], 'testuser@test.com')
+        self.assertEqual(response.data["id"], 1)
+        self.assertEqual(response.data["username"], "testuser")
+        self.assertEqual(response.data["email"], "testuser@test.com")
 
 
 class LoginViewTestCase(TestCase):
@@ -33,24 +33,19 @@ class LoginViewTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(
-            username='testuser',
-            email='testuser@test.com',
-            password='testpass'
+            username="testuser", email="testuser@test.com", password="testpass"
         )
-        self.serializer_url = reverse('login')
+        self.serializer_url = reverse("login")
 
     def test_login_user(self):
         """Test API can login a user"""
 
-        data = {
-            'username': 'testuser',
-            'password': 'testpass'
-        }
-        response = self.client.post(self.serializer_url, data, format='json')
+        data = {"username": "testuser", "password": "testpass"}
+        response = self.client.post(self.serializer_url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
 
 
 class LogoutViewTestCase(TestCase):
@@ -59,18 +54,15 @@ class LogoutViewTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(
-            username='testuser',
-            email='testuser@test.com',
-            password='testpass'
+            username="testuser", email="testuser@test.com", password="testpass"
         )
-        self.client.login(username='testuser', password='testpass')
+        self.client.login(username="testuser", password="testpass")
         self.client.force_authenticate(user=self.user)
         # self.serializer_url = reverse('logout')
         # self.token = self.get_access_token()
 
     def test_get_access_token(self):
-        response = self.client.get('/api/protected/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)        
-        response = self.client.post('/api/logout/',{'username': 'testuser'})
+        response = self.client.get("/api/protected/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.post("/api/logout/", {"username": "testuser"})
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-
